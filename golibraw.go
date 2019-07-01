@@ -109,7 +109,7 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 	myImage := C.libraw_dcraw_make_mem_image(iprc, &makeImageErr)
 	handleError("dcraw processing", int(makeImageErr))
 
-	fmt.Printf("height=%v, dataSize=%d", myImage.height, myImage.data_size)
+	fmt.Printf("height=%v, dataSize=%d \n", myImage.height, myImage.data_size)
 
 	//for i := 0; i < int(myImage.data_size); i++ {
 	// in C sta usando un flexible array ... non so come accedervi in golang
