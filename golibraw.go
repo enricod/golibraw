@@ -7,7 +7,9 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"log"
 	"os"
+	"time"
 	"unsafe"
 
 	"github.com/lmittmann/ppm"
@@ -80,7 +82,10 @@ func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath stri
 	return outfile, nil
 }
 
+// Raw2Image creates a Image from raw file
 func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
+	t0 := time.Now()
+
 	infile := inputPath + "/" + inputfile.Name()
 
 	iprc := lrInit()
@@ -109,7 +114,7 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 	myImage := C.libraw_dcraw_make_mem_image(iprc, &makeImageErr)
 	handleError("dcraw processing", int(makeImageErr))
 
-	fmt.Printf("height=%v, dataSize=%d", myImage.height, myImage.data_size)
+	log.Printf("height=%v, dataSize=%d\n", myImage.height, myImage.data_size)
 
 	//for i := 0; i < int(myImage.data_size); i++ {
 	// in C sta usando un flexible array ... non so come accedervi in golang
@@ -131,22 +136,25 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 		Bits:     uint(myImage.bits),
 		Data:     dataBytes,
 	}
+	/*
+		outfilename := fmt.Sprintf(".rawtool/%s.ppm", inputfile.Name())
+		f, err := os.Create(outfilename)
+		if err != nil {
+			fmt.Println(err)
+			return nil, fmt.Errorf("errore in creazione file out")
+		}
 
-	f, err := os.Create("out.ppm")
-	if err != nil {
-		fmt.Println(err)
-		return nil, fmt.Errorf("errore in creazione file out")
-	}
+		n2, err := f.Write(rawImage.fullBytes())
+		if err != nil {
+			fmt.Println(err)
+			f.Close()
+			return nil, fmt.Errorf("errore in scrittura file out")
+		}
+		fmt.Println(n2, "bytes written successfully")
+		err = f.Close()
+	*/
 
-	n2, err := f.Write(rawImage.fullBytes())
-	if err != nil {
-		fmt.Println(err)
-		f.Close()
-		return nil, fmt.Errorf("errore in scrittura file out")
-	}
-	fmt.Println(n2, "bytes written successfully")
-	err = f.Close()
-
+	log.Printf("raw decoding took %v", time.Since(t0))
 	return ppm.Decode(bytes.NewReader(rawImage.fullBytes()))
 	//outfile := "./" + inputfile.Name() + ".ppm"
 	//fmt.Printf("exporting %s  ->  %s \n", inputfile.Name(), outfile)
