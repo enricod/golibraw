@@ -89,6 +89,7 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 	infile := inputPath + "/" + inputfile.Name()
 
 	iprc := lrInit()
+
 	C.libraw_open_file(iprc, C.CString(infile))
 
 	ret := C.libraw_unpack(iprc)
@@ -114,13 +115,13 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 	myImage := C.libraw_dcraw_make_mem_image(iprc, &makeImageErr)
 	handleError("dcraw processing", int(makeImageErr))
 
-	log.Printf("height=%v, dataSize=%d\n", myImage.height, myImage.data_size)
+	//log.Printf("    height=%v, dataSize=%d\n", myImage.height, myImage.data_size)
 
 	//for i := 0; i < int(myImage.data_size); i++ {
-	// in C sta usando un flexible array ... non so come accedervi in golang
 
 	dataBytes := make([]uint8, int(myImage.data_size))
 
+	// in C sta usando un flexible array ... non so come accedervi in golang, così però sembra funzionare
 	start := unsafe.Pointer(&myImage.data)
 	size := unsafe.Sizeof(uint8(0))
 	for i := 0; i < int(myImage.data_size); i++ {
@@ -154,13 +155,14 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 		err = f.Close()
 	*/
 
-	log.Printf("raw decoding took %v", time.Since(t0))
+	log.Printf("    raw decoding required %v", time.Since(t0))
 	fullbytes := rawImage.fullBytes()
-	reader := bytes.NewReader(fullbytes)
-	result, err := ppm.Decode(reader)
+	result, err := ppm.Decode(bytes.NewReader(fullbytes))
 
 	rawImage.Data = nil
-	defer C.libraw_close(iprc)
+
+	C.libraw_recycle(iprc)
+	C.libraw_close(iprc)
 
 	return result, err
 	//outfile := "./" + inputfile.Name() + ".ppm"
