@@ -155,9 +155,12 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 	*/
 
 	log.Printf("raw decoding took %v", time.Since(t0))
-	result, err := ppm.Decode(bytes.NewReader(rawImage.fullBytes()))
+	fullbytes := rawImage.fullBytes()
+	reader := bytes.NewReader(fullbytes)
+	result, err := ppm.Decode(reader)
 
-	C.libraw_close(iprc)
+	rawImage.Data = nil
+	defer C.libraw_close(iprc)
 
 	return result, err
 	//outfile := "./" + inputfile.Name() + ".ppm"
