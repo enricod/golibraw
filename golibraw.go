@@ -84,7 +84,6 @@ func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath stri
 		handleError("save thumb", int(ret))
 
 		C.libraw_recycle(librawProcessor)
-		//lrClose(iprc)
 	}
 	return outfile, nil
 }
@@ -162,13 +161,12 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 		err = f.Close()
 	*/
 
+	C.libraw_dcraw_clear_mem(myImage)
+	C.libraw_recycle(librawProcessor)
+
 	log.Printf("    raw decoding required %v", time.Since(t0))
 	fullbytes := rawImage.fullBytes()
 	result, err := ppm.Decode(bytes.NewReader(fullbytes))
-
-	rawImage.Data = nil
-
-	C.libraw_recycle(librawProcessor)
 
 	return result, err
 	//outfile := "./" + inputfile.Name() + ".ppm"
