@@ -15,6 +15,10 @@ import (
 	"github.com/lmittmann/ppm"
 )
 
+var librawProcessor *C.libraw_data_t
+
+// librawProcessor := lrInit()
+
 type rawImg struct {
 	Height   int
 	Width    int
@@ -51,8 +55,10 @@ func handleError(msg string, err int) {
 	}
 }
 
-func lrInit() *C.libraw_data_t {
-	return C.libraw_init(0)
+func lrInit() {
+	if librawProcessor == nil {
+		librawProcessor = C.libraw_init(0)
+	}
 }
 
 func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath string) (string, error) {
@@ -61,10 +67,10 @@ func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath stri
 	infile := inputPath + "/" + inputfile.Name()
 
 	if _, err := os.Stat(outfile); os.IsNotExist(err) {
-		iprc := lrInit()
-		C.libraw_open_file(iprc, C.CString(infile))
+		lrInit()
+		C.libraw_open_file(librawProcessor, C.CString(infile))
 
-		ret := C.libraw_unpack_thumb(iprc)
+		ret := C.libraw_unpack_thumb(librawProcessor)
 		handleError("unpack thumb", int(ret))
 
 		//ret = C.libraw_dcraw_process(iprc)
@@ -73,11 +79,12 @@ func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath stri
 		//outfile := exportPath + "/" + inputfile.Name() + ".tiff"
 
 		//fmt.Printf("exporting %s  ->  %s \n", inputfile.Name(), outfile)
-		ret = C.libraw_dcraw_thumb_writer(iprc, C.CString(outfile))
+		ret = C.libraw_dcraw_thumb_writer(librawProcessor, C.CString(outfile))
 
 		handleError("save thumb", int(ret))
 
-		lrClose(iprc)
+		C.libraw_recycle(librawProcessor)
+		//lrClose(iprc)
 	}
 	return outfile, nil
 }
@@ -88,14 +95,14 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 
 	infile := inputPath + "/" + inputfile.Name()
 
-	iprc := lrInit()
+	lrInit()
 
-	C.libraw_open_file(iprc, C.CString(infile))
+	C.libraw_open_file(librawProcessor, C.CString(infile))
 
-	ret := C.libraw_unpack(iprc)
+	ret := C.libraw_unpack(librawProcessor)
 	handleError("unpack", int(ret))
 
-	ret = C.libraw_dcraw_process(iprc)
+	ret = C.libraw_dcraw_process(librawProcessor)
 	handleError("dcraw processing", int(ret))
 
 	//ret = C.libraw_raw2image(iprc)
@@ -112,7 +119,7 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 	//  unsigned char data[1];
 	//} libraw_processed_image_t;
 	//
-	myImage := C.libraw_dcraw_make_mem_image(iprc, &makeImageErr)
+	myImage := C.libraw_dcraw_make_mem_image(librawProcessor, &makeImageErr)
 	handleError("dcraw processing", int(makeImageErr))
 
 	//log.Printf("    height=%v, dataSize=%d\n", myImage.height, myImage.data_size)
@@ -161,8 +168,7 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 
 	rawImage.Data = nil
 
-	C.libraw_recycle(iprc)
-	C.libraw_close(iprc)
+	C.libraw_recycle(librawProcessor)
 
 	return result, err
 	//outfile := "./" + inputfile.Name() + ".ppm"
@@ -186,24 +192,24 @@ func Export(inputPath string, inputfile os.FileInfo, exportPath string) error {
 	infile := inputPath + "/" + inputfile.Name()
 
 	if _, err := os.Stat(outfile); os.IsNotExist(err) {
-		iprc := lrInit()
-		C.libraw_open_file(iprc, C.CString(infile))
+		lrInit()
+		C.libraw_open_file(librawProcessor, C.CString(infile))
 
-		ret := C.libraw_unpack(iprc)
+		ret := C.libraw_unpack(librawProcessor)
 		handleError("unpack", int(ret))
 
-		ret = C.libraw_dcraw_process(iprc)
+		ret = C.libraw_dcraw_process(librawProcessor)
 
 		handleError("dcraw processing", int(ret))
 		//iprc.params.output_tiff = 1
 		//outfile := exportPath + "/" + inputfile.Name() + ".tiff"
 
 		fmt.Printf("exporting %s  ->  %s \n", inputfile.Name(), outfile)
-		ret = C.libraw_dcraw_ppm_tiff_writer(iprc, C.CString(outfile))
+		ret = C.libraw_dcraw_ppm_tiff_writer(librawProcessor, C.CString(outfile))
 
 		handleError("save ppm", int(ret))
 
-		lrClose(iprc)
+		C.libraw_recycle(librawProcessor)
 	}
 	return nil
 }
