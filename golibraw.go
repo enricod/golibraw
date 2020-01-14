@@ -17,7 +17,11 @@ import (
 
 var librawProcessor *C.libraw_data_t
 
-// librawProcessor := lrInit()
+// ImgMetadata contiene alcuni dati relativi all'immagine letti da libraw
+type ImgMetadata struct {
+	ScattoTimestamp int64
+	ScattoDataOra   string
+}
 
 type rawImg struct {
 	Height   int
@@ -49,7 +53,6 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 }
 */
 func handleError(msg string, err int) {
-
 	if err != 0 {
 		fmt.Printf("ERROR libraw  %v\n", C.libraw_strerror(C.int(err)))
 	}
@@ -89,10 +92,8 @@ func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath stri
 }
 
 // Raw2Image creates a Image from raw file
-func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
+func Raw2Image(infile string) (image.Image, ImgMetadata, error) {
 	t0 := time.Now()
-
-	infile := inputPath + "/" + inputfile.Name()
 
 	lrInit()
 
@@ -104,10 +105,6 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 	ret = C.libraw_dcraw_process(librawProcessor)
 	handleError("dcraw processing", int(ret))
 
-	//ret = C.libraw_raw2image(iprc)
-	//handleError("dcraw processing", int(ret))
-
-	//C.libraw_dcraw_process(iprc)
 	var makeImageErr C.int
 
 	//typedef struct
@@ -120,10 +117,6 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 	//
 	myImage := C.libraw_dcraw_make_mem_image(librawProcessor, &makeImageErr)
 	handleError("dcraw processing", int(makeImageErr))
-
-	//log.Printf("    height=%v, dataSize=%d\n", myImage.height, myImage.data_size)
-
-	//for i := 0; i < int(myImage.data_size); i++ {
 
 	dataBytes := make([]uint8, int(myImage.data_size))
 
@@ -161,6 +154,17 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 		err = f.Close()
 	*/
 
+	//iparam := C.libraw_get_iparams(librawProcessor)
+	//log.Printf(" iparam  = %v", iparam)
+	//lensinfo := C.libraw_get_lensinfo(librawProcessor)
+	//log.Printf(" lensinfo  = %v", lensinfo)
+	other := C.libraw_get_imgother(librawProcessor)
+	//log.Printf(" OTHER = %v", other.timestamp)
+
+	// data di scatto (timestamp)
+	timestamp := int64(other.timestamp)
+	dataScatto := time.Unix(timestamp, 0)
+
 	C.libraw_dcraw_clear_mem(myImage)
 	C.libraw_recycle(librawProcessor)
 
@@ -168,7 +172,9 @@ func Raw2Image(inputPath string, inputfile os.FileInfo) (image.Image, error) {
 	fullbytes := rawImage.fullBytes()
 	result, err := ppm.Decode(bytes.NewReader(fullbytes))
 
-	return result, err
+	return result,
+		ImgMetadata{ScattoTimestamp: timestamp,
+			ScattoDataOra: dataScatto.Format("2006-01-02T15:04:05")}, err
 	//outfile := "./" + inputfile.Name() + ".ppm"
 	//fmt.Printf("exporting %s  ->  %s \n", inputfile.Name(), outfile)
 	//ret = C.libraw_dcraw_ppm_tiff_writer(iprc, C.CString(outfile))
