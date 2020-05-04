@@ -15,7 +15,7 @@ import (
 	"github.com/lmittmann/ppm"
 )
 
-var librawProcessor *C.libraw_data_t
+// var librawProcessor *C.libraw_data_t
 
 // ImgMetadata contiene alcuni dati relativi all'immagine letti da libraw
 type ImgMetadata struct {
@@ -58,10 +58,11 @@ func handleError(msg string, err int) {
 	}
 }
 
-func lrInit() {
-	if librawProcessor == nil {
-		librawProcessor = C.libraw_init(0)
-	}
+func lrInit() *C.libraw_data_t {
+	//if librawProcessor == nil {
+	librawProcessor := C.libraw_init(0)
+	//}
+	return librawProcessor
 }
 
 func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath string) (string, error) {
@@ -70,7 +71,7 @@ func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath stri
 	infile := inputPath + "/" + inputfile.Name()
 
 	if _, err := os.Stat(outfile); os.IsNotExist(err) {
-		lrInit()
+		librawProcessor := lrInit()
 		C.libraw_open_file(librawProcessor, C.CString(infile))
 
 		ret := C.libraw_unpack_thumb(librawProcessor)
@@ -95,7 +96,7 @@ func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath stri
 func Raw2Image(infile string) (image.Image, ImgMetadata, error) {
 	t0 := time.Now()
 
-	lrInit()
+	librawProcessor := lrInit()
 
 	C.libraw_open_file(librawProcessor, C.CString(infile))
 
@@ -196,7 +197,7 @@ func Export(inputPath string, inputfile os.FileInfo, exportPath string) error {
 	infile := inputPath + "/" + inputfile.Name()
 
 	if _, err := os.Stat(outfile); os.IsNotExist(err) {
-		lrInit()
+		librawProcessor := lrInit()
 		C.libraw_open_file(librawProcessor, C.CString(infile))
 
 		ret := C.libraw_unpack(librawProcessor)
