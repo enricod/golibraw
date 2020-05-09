@@ -15,8 +15,6 @@ import (
 	"github.com/lmittmann/ppm"
 )
 
-// var librawProcessor *C.libraw_data_t
-
 // ImgMetadata contiene alcuni dati relativi all'immagine letti da libraw
 type ImgMetadata struct {
 	ScattoTimestamp int64
@@ -36,22 +34,6 @@ func (r rawImg) fullBytes() []byte {
 	return append([]byte(header), r.Data...)
 }
 
-/*
-func (r *Reader) Read(p []byte) (n int, err error) {
-
-	// header
-	// fprintf(f, "P6\n%d %d\n%d\n", img->width, img->height, (1 << img->bits) - 1);
-
-	if r.done {
-		return 0, io.EOF
-	}
-	for i, b := range []byte(r.read) {
-		p[i] = b
-	}
-	r.done = true
-	return len(r.read), nil
-}
-*/
 func handleError(msg string, err int) {
 	if err != 0 {
 		fmt.Printf("ERROR libraw  %v\n", C.libraw_strerror(C.int(err)))
@@ -213,6 +195,7 @@ func Export(inputPath string, inputfile os.FileInfo, exportPath string) error {
 		handleError("save ppm", int(ret))
 
 		C.libraw_recycle(librawProcessor)
+		lrClose(librawProcessor)
 	}
 	return nil
 }
