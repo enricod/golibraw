@@ -45,6 +45,7 @@ func lrInit() *C.libraw_data_t {
 	return librawProcessor
 }
 
+// ExportEmbeddedJPEG immagine JPEG salvata in file RAW
 func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath string) (string, error) {
 
 	outfile := exportPath + "/" + inputfile.Name() + "_embedded.jpg"
@@ -68,6 +69,7 @@ func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath stri
 		handleError("save thumb", int(ret))
 
 		C.libraw_recycle(librawProcessor)
+		lrClose(librawProcessor)
 	}
 	return outfile, nil
 }
