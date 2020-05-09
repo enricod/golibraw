@@ -69,7 +69,7 @@ func ExportEmbeddedJPEG(inputPath string, inputfile os.FileInfo, exportPath stri
 		handleError("save thumb", int(ret))
 
 		C.libraw_recycle(librawProcessor)
-		lrClose(librawProcessor)
+		// lrClose(librawProcessor)
 	}
 	return outfile, nil
 }
@@ -197,7 +197,7 @@ func Export(inputPath string, inputfile os.FileInfo, exportPath string) error {
 		handleError("save ppm", int(ret))
 
 		C.libraw_recycle(librawProcessor)
-		lrClose(librawProcessor)
+		//lrClose(librawProcessor)
 	}
 	return nil
 }
