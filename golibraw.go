@@ -59,9 +59,7 @@ func handleError(msg string, err int) {
 }
 
 func lrInit() *C.libraw_data_t {
-	//if librawProcessor == nil {
 	librawProcessor := C.libraw_init(0)
-	//}
 	return librawProcessor
 }
 
